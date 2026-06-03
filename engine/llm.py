@@ -1,27 +1,16 @@
 import os
-from typing import Iterator, Optional
-import google.generativeai as genai
+from typing import Iterator
+from google import genai
+from google.genai import types
 from rich.console import Console
 
-
 class GeminiClient:
-    """Client for interacting with Gemini 1.5 Flash API."""
+    """Client for interacting with the current Google GenAI API."""
     
-    def __init__(self, api_key: Optional[str] = None):
-        """
-        Initialize the Gemini client.
-        
-        Args:
-            api_key: Google API key. If None, reads from GEMINI_API_KEY env var.
-        """
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        if not self.api_key:
-            raise ValueError(
-                "GEMINI_API_KEY environment variable must be set or api_key must be provided"
-            )
-        
-        genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
+    def __init__(self, api_key: str | None = None):
+        # The client automatically picks up GEMINI_API_KEY from env vars
+        self.client = genai.Client(api_key=api_key or os.getenv("GEMINI_API_KEY"))
+        self.model_name = "gemini-3.5-flash"
         self.console = Console()
     
     def generate_fix(
@@ -30,32 +19,20 @@ class GeminiClient:
         code_context: str,
         stream: bool = True
     ) -> Iterator[str] | str:
-        """
-        Generate a fix suggestion based on error and code context.
-        
-        Args:
-            error_context: The error message/traceback
-            code_context: The relevant code context around the error
-            stream: Whether to stream the response
-        
-        Returns:
-            Iterator of response chunks if stream=True, otherwise full response string
-        
-        Raises:
-            ValueError: If the LLM returns an empty or invalid response
-        """
         prompt = self._build_prompt(error_context, code_context)
         
         if stream:
             return self._stream_response(prompt)
         else:
-            response = self.model.generate_content(prompt)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=prompt
+            )
             if not response.text or not response.text.strip():
-                raise ValueError("LLM returned an empty response. Please try again.")
+                raise ValueError("LLM returned an empty response.")
             return response.text
     
     def _build_prompt(self, error_context: str, code_context: str) -> str:
-        """Build the prompt for the LLM."""
         return f"""You are an expert debugging assistant. Analyze the following error and code context to provide a fix.
 
 ERROR CONTEXT:
@@ -72,12 +49,10 @@ Provide your response in the following format:
 IMPORTANT: Return ONLY the complete file content for the fix, not just the changed lines."""
     
     def _stream_response(self, prompt: str) -> Iterator[str]:
-        """Stream the response from the LLM.
-        
-        Raises:
-            ValueError: If the LLM returns an empty or invalid response
-        """
-        response = self.model.generate_content(prompt, stream=True)
+        response = self.client.models.generate_content_stream(
+            model=self.model_name,
+            contents=prompt
+        )
         
         has_content = False
         for chunk in response:
@@ -86,29 +61,24 @@ IMPORTANT: Return ONLY the complete file content for the fix, not just the chang
                 self.console.print(chunk.text, end="")
                 yield chunk.text
         
-        self.console.print()  # New line after streaming completes
-        
+        self.console.print()
         if not has_content:
-            raise ValueError("LLM returned an empty response. Please try again.")
-    
+            raise ValueError("LLM returned an empty response.")
+            
     def chat(self, message: str, stream: bool = True) -> Iterator[str] | str:
-        """
-        Send a chat message to the LLM.
-        
-        Args:
-            message: The message to send
-            stream: Whether to stream the response
-        
-        Returns:
-            Iterator of response chunks if stream=True, otherwise full response string
-        """
         if stream:
-            response = self.model.generate_content(message, stream=True)
+            response = self.client.models.generate_content_stream(
+                model=self.model_name,
+                contents=message
+            )
             for chunk in response:
                 if chunk.text:
                     self.console.print(chunk.text, end="")
                     yield chunk.text
             self.console.print()
         else:
-            response = self.model.generate_content(message)
+            response = self.client.models.generate_content(
+                model=self.model_name,
+                contents=message
+            )
             return response.text
