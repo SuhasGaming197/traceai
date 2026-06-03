@@ -1,4 +1,3 @@
-<img width="2560" height="1080" alt="Desktop Screenshot 2026 06 03 - 20 34 12 05" src="https://github.com/user-attachments/assets/0abc1657-cb0d-42de-a174-27ca6a22e239" />
 # TraceAI - Automated Debugging Assistant
 
 TraceAI is an intelligent debugging tool that executes commands, analyzes errors using AI, and suggests fixes with interactive patch application. It combines subprocess execution, traceback parsing, LLM-powered analysis, and atomic patching into a unified workflow.
