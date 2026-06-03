@@ -7,7 +7,7 @@ TraceAI is an intelligent debugging tool that executes commands, analyzes errors
 - **Command Execution**: Run any command with configurable timeout and capture stdout/stderr
 - **Traceback Parsing**: Extract file paths and line numbers from Python and Node.js stack traces
 - **Context Extraction**: Automatically retrieve code context around error locations
-- **AI-Powered Analysis**: Uses Gemini 1.5 Flash to generate intelligent fix suggestions
+- **AI-Powered Analysis**: Uses Gemini Flash (latest stable version) to generate intelligent fix suggestions.
 - **Interactive Patching**: Preview git-style diffs before applying changes
 - **Safe by Default**: Dry-run mode ensures developer control over codebase modifications
 - **Atomic Operations**: File modifications use atomic writes to prevent corruption
